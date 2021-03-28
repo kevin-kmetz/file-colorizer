@@ -2,6 +2,7 @@ package FileColorizer;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,8 +13,8 @@ public class FileColorizer {
 	private int imageHeight;
 	private int imagePixels;			// Simply imageWidth * imageHeight.
 
-	private int numberOfFullPixels;	// Number of pixels to be extracted from file that won't need any padding in RGB.
-	private int leftOverBytes;		// Number of bytes needed to make final pixel complete (0, 1, or 2).
+	private int numberOfFullPixels;		// Number of pixels to be extracted from file that won't need any padding in RGB.
+	private int leftOverBytes;			// Number of bytes needed to make final pixel complete (0, 1, or 2).
 	private int totalPixels;			// Number of pixels to be extracted from file, including extra bytes needed to get a full final pixel.
 
 	public static void main(String[] args) {
@@ -37,7 +38,7 @@ public class FileColorizer {
 	}
 
 
-	FileColorizer(String fileName, int imageWidth) {
+	FileColorizer(String fileName, int width) {
 
 		try {
 
@@ -55,25 +56,29 @@ public class FileColorizer {
 
 			}
 
-			this.imageWidth = imageWidth;
+			imageWidth = width;
 
-			if (imageWidth <= 0) {
+			System.out.println(imageWidth);
+			System.out.println(imageHeight);
+			System.out.println(totalPixels);
+
+			if (width <= 0) {
 
 				this.imageWidth = (int) Math.ceil(Math.sqrt((double) totalPixels));
 
 			}
 
-			imageHeight = totalPixels / this.imageWidth;
+			imageHeight = totalPixels / imageWidth;
 
-			if (totalPixels % this.imageWidth != 0) {
+			if (totalPixels % imageWidth != 0) {
 				imageHeight++;
 			}
 
 			imagePixels = imageWidth * imageHeight;
 
-			System.out.println(this.imageWidth);
-			System.out.println(imageHeight);
-			System.out.println(totalPixels);
+			//System.out.println(this.imageWidth);
+			//System.out.println(imageHeight);
+			//System.out.println(totalPixels);
 
 			int y = 0;
 			int x = 0;
@@ -103,9 +108,49 @@ public class FileColorizer {
 
 				}
 
-				y++;
+				if (x == imageWidth) {
+					
+					x = 0;
+					y++;
+
+				}
 
 			}
+
+			// Pad out the final RGB value if the number of file bytes is not fully divisible by three.
+			if (numberOfFullPixels != totalPixels) {
+
+				redValue = 0;
+				greenValue = 0;
+				blueValue = 0;
+
+				if (leftOverBytes == 1) {
+
+					redValue = fileReader.read();
+
+				} else if (leftOverBytes == 2) {
+
+					redValue = fileReader.read();
+					greenValue = fileReader.read();
+
+				}
+
+				Color color = new Color(redValue, greenValue, blueValue);
+				fileAsImage.setRGB(x, y, color.getRGB());
+
+			}
+
+			// Write RGB values to final pixels in output image to fill out the desired width of the image.
+			for (int paddingPixels = imagePixels - totalPixels; paddingPixels > 0; paddingPixels--) {
+
+				fileAsImage.setRGB(imageWidth-paddingPixels,imageHeight-1, 0);
+
+			}
+
+			File outputFile = new File(fileName + "_asImage.png");
+			outputFile.createNewFile();
+
+			ImageIO.write(fileAsImage, "png", outputFile);
 
 		} catch (Exception e) {
 
