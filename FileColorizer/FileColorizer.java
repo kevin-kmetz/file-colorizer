@@ -1,15 +1,20 @@
 package FileColorizer;
 
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+
 import java.io.File;
+import java.io.FileInputStream;
 
 public class FileColorizer {
 
-	int imageWidth;
-	int imageHeight;
+	private int imageWidth;
+	private int imageHeight;
+	private int imagePixels;			// Simply imageWidth * imageHeight.
 
-	int numberOfFullPixels;		// Number of pixels that won't need any padding in RGB.
-	int leftOverBytes;			// Number of bytes needed to make final pixel complete (0, 1, or 2).
-	int totalPixels;			// Number of pixels, including extra bytes needed to get a full final pixel.
+	private int numberOfFullPixels;	// Number of pixels to be extracted from file that won't need any padding in RGB.
+	private int leftOverBytes;		// Number of bytes needed to make final pixel complete (0, 1, or 2).
+	private int totalPixels;			// Number of pixels to be extracted from file, including extra bytes needed to get a full final pixel.
 
 	public static void main(String[] args) {
 
@@ -34,37 +39,80 @@ public class FileColorizer {
 
 	FileColorizer(String fileName, int imageWidth) {
 
-		File file = new File(fileName);
-		int fileSize = Math.toIntExact(file.length());
+		try {
 
-		numberOfFullPixels = fileSize / 3;
-		leftOverBytes = fileSize % 3;
+			File file = new File(fileName);
+			int fileSize = Math.toIntExact(file.length());
 
-		totalPixels = numberOfFullPixels;
+			numberOfFullPixels = fileSize / 3;
+			leftOverBytes = fileSize % 3;
 
-		if (leftOverBytes > 0) {
+			totalPixels = numberOfFullPixels;
 
-			totalPixels++;
+			if (leftOverBytes > 0) {
+
+				totalPixels++;
+
+			}
+
+			this.imageWidth = imageWidth;
+
+			if (imageWidth <= 0) {
+
+				this.imageWidth = (int) Math.ceil(Math.sqrt((double) totalPixels));
+
+			}
+
+			imageHeight = totalPixels / this.imageWidth;
+
+			if (totalPixels % this.imageWidth != 0) {
+				imageHeight++;
+			}
+
+			imagePixels = imageWidth * imageHeight;
+
+			System.out.println(this.imageWidth);
+			System.out.println(imageHeight);
+			System.out.println(totalPixels);
+
+			int y = 0;
+			int x = 0;
+			int currentPixel = 0;
+
+			int redValue;
+			int greenValue;
+			int blueValue;
+
+			FileInputStream fileReader = new FileInputStream(file);
+			BufferedImage fileAsImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+
+			while (y < imageHeight && currentPixel < numberOfFullPixels) {
+
+				while (x < imageWidth && currentPixel < numberOfFullPixels) {
+
+					redValue = fileReader.read();
+					greenValue = fileReader.read();
+					blueValue = fileReader.read();
+
+					Color color = new Color(redValue, greenValue, blueValue);
+
+					fileAsImage.setRGB(x, y, color.getRGB());
+
+					x++;
+					currentPixel++;
+
+				}
+
+				y++;
+
+			}
+
+		} catch (Exception e) {
+
+			System.out.println("Error in program execution!");
+			e.printStackTrace();
 
 		}
-
-		this.imageWidth = imageWidth;
-
-		if (imageWidth <= 0) {
-
-			this.imageWidth = (int) Math.ceil(Math.sqrt((double) totalPixels));
-
-		}
-
-		imageHeight = totalPixels / this.imageWidth;
-
-		if (totalPixels % this.imageWidth != 0) {
-			imageHeight++;
-		}
-
-		System.out.println(this.imageWidth);
-		System.out.println(imageHeight);
-		System.out.println(totalPixels);
 
 	}
 
